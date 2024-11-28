@@ -13,7 +13,7 @@ def calcular_e_plotar_correlacao(df, csat_columns, safra_name):
     for col in csat_columns:
         # Calcular a correlação de Spearman entre 'nota' e a coluna CSAT
         valid_data = df[['nota', col]].dropna()  # Remove linhas com NaN
-        if valid_data.shape[0] >= 10:  # Garantir que há pelo menos 3 valores válidos
+        if valid_data.shape[0] >= 10:  # Garantir que há pelo menos 10 valores válidos
             corr, _ = spearmanr(valid_data['nota'], valid_data[col])  # Calcula a correlação de Spearman
             if corr > 0:  # Considerar apenas correlações positivas
                 correlations.append((col, corr))
@@ -42,7 +42,7 @@ def calcular_e_plotar_correlacao(df, csat_columns, safra_name):
     correlation_df['Cor'] = correlation_df['Correlação'].apply(get_color)
 
     # Plotar as correlações
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(40, 10))
     sns.barplot(x='Correlação', y='Coluna', data=correlation_df, palette=correlation_df['Cor'].tolist())
     plt.title(f'Correlação de Spearman entre "nota" e Variáveis CSAT ({safra_name})')
     plt.xlabel('Correlação de Spearman')
