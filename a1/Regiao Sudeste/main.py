@@ -2,7 +2,8 @@ import pandas as pd
 
 from a1.funções.volumetria import calcular_volumetria_todas_safras
 from a1.funções.correlacao import calcular_e_plotar_correlacao, filtrar_colunas_csat
-from a1.funções.modelos import criar_targets_binarios, treinar_modelo_random_forest, salvar_importancias
+from a1.funções.modelos import criar_targets_binarios, salvar_importancias, \
+    clean_feature_names, treinar_modelo_xgboost, gerar_pdp
 
 # Carregar a base de dados
 file_path = '../../Lista NPS Positivo_V4.xlsx'
@@ -73,21 +74,34 @@ for safra in df['safra'].unique():
 # Gerar gráfico e arquivo para todas as safras combinadas
 calcular_e_plotar_correlacao(df, csat_columns, "todas_safras")
 
+
 # Modelos
 # Criar os targets binários
 df = criar_targets_binarios(df)
+X = df[csat_columns]
+# Clean feature names
+cleaned_feature_names = clean_feature_names(X.columns)
+X.columns = cleaned_feature_names
 
-# Preparar espaço de características (X)
-X = df[csat_columns].fillna(-99999)
-
+# Proceed to train models
 # Modelo para Detratores
-print("Treinando Modelo para Detratores...")
-model_d = treinar_modelo_random_forest(X, df['y_target_d'])
-salvar_importancias(model_d, csat_columns, "importancias_detratores")
+print("Treinando Modelo para Detratores com XGBoost...")
+model_d = treinar_modelo_xgboost(X, df['y_target_d'])
+feature_importances_d = salvar_importancias(model_d, X.columns, "importancias_detratores")
+
+# Extract top 5 features for Detratores
+top_5_features_d = feature_importances_d.sort_values(by='Importance', ascending=False).head(5)['Feature'].tolist()
+
+# Generate PDP plots for top 5 features
+gerar_pdp(model_d, X, top_5_features_d, 'Detratores')
 
 # Modelo para Neutros
-print("Treinando Modelo para Neutros...")
-model_n = treinar_modelo_random_forest(X, df['y_target_n'])
-salvar_importancias(model_n, csat_columns, "importancias_neutros")
+print("Treinando Modelo para Neutros com XGBoost...")
+model_n = treinar_modelo_xgboost(X, df['y_target_n'])
+feature_importances_n = salvar_importancias(model_n, X.columns, "importancias_neutros")
 
-print("Modelos treinados e resultados salvos.")
+# Extract top 5 features for Neutros
+top_5_features_n = feature_importances_n.sort_values(by='Importance', ascending=False).head(5)['Feature'].tolist()
+
+# Generate PDP plots for top 5 features
+gerar_pdp(model_n, X, top_5_features_n, 'Neutros')
